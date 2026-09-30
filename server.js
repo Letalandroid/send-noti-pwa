@@ -3,6 +3,8 @@ import webpush from 'web-push';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
+import qrcode from 'qrcode-terminal';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -277,7 +279,7 @@ app.post('/api/send-delayed', (req, res) => {
   });
 
   // Ejecutar el envío en segundo plano tras el retardo
-  setTimeout(async () => {
+  const delayTimer = setTimeout(async () => {
     console.log(`[Push Retardado] Disparando notificación tras ${waitTime}s de espera...`);
     // Recargar o usar targets activos
     const currentTargets = targetId
@@ -286,6 +288,7 @@ app.post('/api/send-delayed', (req, res) => {
 
     await dispatchPushNotifications(currentTargets, payload);
   }, waitTime * 1000);
+  if (delayTimer.unref) delayTimer.unref();
 });
 
 // Disparador rápido por GET (útil para pruebas desde terminal o navegador)
@@ -322,11 +325,43 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`===============================================`);
-  console.log(`🚀 Servidor Send Noti PWA corriendo en:`);
-  console.log(`   Local:   http://localhost:${PORT}`);
-  console.log(`   Clave Pública VAPID:`);
-  console.log(`   ${vapidKeys.publicKey}`);
-  console.log(`===============================================`);
-});
+// Obtener IP local para pruebas en red WiFi
+function getLocalNetworkIp() {
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+  } catch (e) {}
+  return 'localhost';
+}
+
+export { app, vapidKeys, subscriptions, saveSubscriptions };
+
+let server;
+const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isMainModule && process.env.NODE_ENV !== 'test') {
+  const localIp = getLocalNetworkIp();
+  const localUrl = `http://localhost:${PORT}`;
+  const networkUrl = `http://${localIp}:${PORT}`;
+
+  server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n======================================================`);
+    console.log(`🚀 Send Noti PWA está lista y corriendo:`);
+    console.log(`   • Tu Navegador:  ${localUrl}`);
+    console.log(`   • Red WiFi:      ${networkUrl}`);
+    console.log(`\n📲 Para abrir en tu iPhone desde la misma red WiFi:`);
+    qrcode.generate(networkUrl, { small: true }, (qr) => console.log(qr));
+    console.log(`💡 NOTA PARA iOS: Para notificaciones push en iPhone,`);
+    console.log(`   Apple exige HTTPS. Puedes iniciar un túnel seguro con:`);
+    console.log(`   👉 npm run tunnel`);
+    console.log(`======================================================\n`);
+  });
+}
+
+export { server };
