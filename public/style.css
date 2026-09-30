@@ -117,8 +117,8 @@ body {
 /* Nav Tabs */
 .nav-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
   background: var(--bg-card);
   padding: 6px;
   border-radius: var(--radius-md);
@@ -130,8 +130,8 @@ body {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 10px 4px;
-  font-size: 0.8rem;
+  padding: 12px 8px;
+  font-size: 0.92rem;
   font-weight: 600;
   border-radius: var(--radius-sm);
   cursor: pointer;
