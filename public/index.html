@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a84ff">
+  
+  <!-- PWA & Apple iOS Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SendNoti">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+  
+  <title>Send Noti PWA - Notificaciones Push iOS & Android</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-logo">
+          <img src="/icons/icon-192.png" alt="SendNoti Logo" width="38" height="38">
+        </div>
+        <div>
+          <h1 class="app-title">Send Noti PWA</h1>
+          <span class="app-subtitle" id="deviceBadge">Detectando dispositivo...</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="status-indicator online" id="netStatus" title="Estado de conexión">En línea</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-device" role="tab">
+        <span class="tab-icon">📱</span> Mi Dispositivo
+      </button>
+      <button class="tab-btn" data-tab="tab-send" role="tab">
+        <span class="tab-icon">🚀</span> Enviar Noti
+      </button>
+      <button class="tab-btn" data-tab="tab-providers" role="tab">
+        <span class="tab-icon">💡</span> Proveedores $0
+      </button>
+      <button class="tab-btn" data-tab="tab-supabase" role="tab">
+        <span class="tab-icon">⚡</span> Supabase
+      </button>
+    </nav>
+
+    <!-- TAB 1: MI DISPOSITIVO -->
+    <main class="tab-content active" id="tab-device">
+      <!-- iOS Instruction Card (dynamically shown or tailored) -->
+      <div class="alert-card ios-banner" id="iosGuideBanner">
+        <div class="alert-header">
+          <span class="alert-icon">📲</span>
+          <strong>Requisito Indispensable en iPhone / iPad (iOS):</strong>
+        </div>
+        <p class="alert-desc">
+          Apple exige iOS 16.4 o superior y que la web esté añadida a la pantalla de inicio para permitir Notificaciones Push:
+        </p>
+        <ol class="ios-steps">
+          <li>Abre esta web en <strong>Safari</strong> de tu iPhone.</li>
+          <li>Toca el botón <strong>Compartir</strong> <span class="share-icon-inline">⎙</span> (icono del cuadro con flecha arriba en la barra de Safari).</li>
+          <li>Selecciona <strong>"Añadir a pantalla de inicio"</strong>.</li>
+          <li>Abre la app desde tu pantalla de inicio y pulsa abajo en <strong>"Activar Notificaciones"</strong>.</li>
+        </ol>
+      </div>
+
+      <!-- Standalone Detected Banner -->
+      <div class="alert-card success-banner hidden" id="standaloneBanner">
+        <span class="alert-icon">✅</span>
+        <div>
+          <strong>¡Estás en modo PWA Instalada!</strong>
+          <p>Tu iPhone/navegador está listo para recibir notificaciones push en segundo plano.</p>
+        </div>
+      </div>
+
+      <!-- Subscription Status Card -->
+      <section class="card">
+        <h2 class="card-title">Estado de Notificaciones</h2>
+        <div class="status-box">
+          <div class="status-row">
+            <span>Permiso en el Navegador:</span>
+            <span class="badge badge-default" id="permStatus">Consultando...</span>
+          </div>
+          <div class="status-row">
+            <span>Suscripción Push:</span>
+            <span class="badge badge-warning" id="subStatus">No suscrito</span>
+          </div>
+          <div class="status-row">
+            <span>Dispositivos Conectados:</span>
+            <span class="badge badge-info" id="subscribersCount">0</span>
+          </div>
+        </div>
+
+        <div class="actions-group">
+          <button id="btnSubscribe" class="btn btn-primary btn-block">
+            <span class="btn-icon">🔔</span> Activar Notificaciones Push
+          </button>
+          <button id="btnSendTestToMe" class="btn btn-secondary btn-block hidden">
+            <span class="btn-icon">⚡</span> Enviarme Notificación de Prueba
+          </button>
+          <button id="btnUnsubscribe" class="btn btn-outline-danger btn-block hidden">
+            <span class="btn-icon">🔕</span> Desactivar Notificaciones
+          </button>
+        </div>
+
+        <div id="subscriptionMessage" class="feedback-msg"></div>
+      </section>
+
+      <!-- Device Details Card -->
+      <section class="card">
+        <details>
+          <summary class="details-summary">ℹ️ Ver detalles técnicos de este dispositivo</summary>
+          <div class="details-content">
+            <p><strong>Navegador / SO:</strong> <span id="debugUserAgent">-</span></p>
+            <p><strong>Modo Standalone (PWA):</strong> <span id="debugStandalone">-</span></p>
+            <p><strong>Soporte Service Worker:</strong> <span id="debugSW">-</span></p>
+            <p><strong>Soporte PushManager:</strong> <span id="debugPush">-</span></p>
+            <p><strong>Clave Pública VAPID:</strong> <code class="code-snippet" id="debugVapidKey">Cargando...</code></p>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <!-- TAB 2: ENVIAR NOTIFICACIÓN -->
+    <main class="tab-content" id="tab-send">
+      <section class="card">
+        <div class="card-header-flex">
+          <h2 class="card-title">Difusión de Notificación Push</h2>
+          <span class="badge badge-info" id="activeSubscribersBadge">0 suscriptores</span>
+        </div>
+        <p class="card-description">
+          Envía una notificación push en tiempo real a todos los iPhones, teléfonos Android y computadoras suscritas.
+        </p>
+
+        <form id="pushForm" class="push-form">
+          <div class="form-group">
+            <label for="notiTitle">Título de la Notificación *</label>
+            <input type="text" id="notiTitle" class="form-input" placeholder="Ej: ¡Aviso Importante!" required maxlength="60" value="¡Prueba de Notificación Push!">
+          </div>
+
+          <div class="form-group">
+            <label for="notiBody">Mensaje / Contenido *</label>
+            <textarea id="notiBody" class="form-input" rows="3" placeholder="Escribe el mensaje que verán los usuarios..." required maxlength="250">Hola 👋, esta es una notificación push enviada a tu dispositivo PWA con coste $0.</textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="notiUrl">URL de apertura (al hacer clic)</label>
+            <input type="url" id="notiUrl" class="form-input" placeholder="https://ejemplo.com o /" value="/">
+            <small class="form-help">Si el usuario pulsa la notificación, se abrirá esta URL en su pantalla.</small>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btnBroadcast">
+            <span class="btn-icon">🚀</span> Enviar Notificación a Todos
+          </button>
+        </form>
+
+        <div id="sendFeedback" class="feedback-msg"></div>
+      </section>
+
+      <!-- Dispositivos Registrados -->
+      <section class="card">
+        <div class="card-header-flex">
+          <h3 class="card-subtitle">Dispositivos Suscritos</h3>
+          <button class="btn btn-sm btn-outline" id="btnRefreshSubs">🔄 Actualizar</button>
+        </div>
+        <div id="subscribersList" class="subscribers-list">
+          <p class="empty-state">No hay dispositivos registrados aún.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 3: PROVEEDORES $0 COSTE -->
+    <main class="tab-content" id="tab-providers">
+      <section class="card">
+        <h2 class="card-title">Comparativa de Proveedores Push a Coste $0</h2>
+        <p class="card-description">
+          Análisis completo de alternativas gratuitas para enviar notificaciones Web Push a iOS (iPhone) y Android.
+        </p>
+
+        <!-- Provider 1: Web Push Nativo -->
+        <div class="provider-card highlight">
+          <div class="provider-badge">RECOMENDADO ($0 DE POR VIDA)</div>
+          <h3 class="provider-name">1. Web Push Nativo (VAPID)</h3>
+          <p class="provider-tagline">El estándar oficial W3C que utiliza este proyecto.</p>
+          <ul class="feature-list">
+            <li><strong>Coste:</strong> <strong>$0.00 / Ilimitado de por vida</strong>. Sin intermediarios, sin límites de usuarios ni de mensajes.</li>
+            <li><strong>Cómo funciona:</strong> Tu servidor (o función serverless) envía peticiones HTTPS directas a los servidores de Apple (APNs: <code>web.push.apple.com</code>) y Google (FCM). Solo necesitas un par de claves criptográficas VAPID.</li>
+            <li><strong>iOS PWA:</strong> Soporte nativo oficial desde iOS 16.4 sin pagar la cuenta de Apple Developer ($99/año).</li>
+            <li><strong>Ventajas:</strong> 100% privado, máximo rendimiento, sin SDKs pesados de terceros, sin riesgo de que cambien los planes de pago.</li>
+          </ul>
+        </div>
+
+        <!-- Provider 2: Supabase -->
+        <div class="provider-card">
+          <h3 class="provider-name">2. Supabase (PostgreSQL + Edge Functions)</h3>
+          <p class="provider-tagline">¿Se puede lograr el mismo resultado? <strong>SÍ, absolutamente.</strong></p>
+          <ul class="feature-list">
+            <li><strong>Coste:</strong> <strong>$0</strong> en su Free Tier (500 MB base de datos, 50,000 Edge Functions/mes, autenticación y webhooks incluidos).</li>
+            <li><strong>Cómo funciona:</strong> Almacenas la suscripción push en una tabla Postgres en Supabase. Cuando desees enviar una notificación (manual, por cron o por un Trigger en la base de datos), invocas una Supabase Edge Function (Deno) que ejecuta el envío Web Push con tus claves VAPID.</li>
+            <li><strong>Ventajas:</strong> Si ya usas Supabase para tu base de datos o autenticación, tienes todo unificado sin contratar ningún otro servicio.</li>
+          </ul>
+        </div>
+
+        <!-- Provider 3: Firebase Cloud Messaging (FCM) -->
+        <div class="provider-card">
+          <h3 class="provider-name">3. Firebase Cloud Messaging (FCM)</h3>
+          <p class="provider-tagline">El servicio tradicional de Google.</p>
+          <ul class="feature-list">
+            <li><strong>Coste:</strong> <strong>$0</strong> (Envío ilimitado en el plan Spark gratuito de Firebase).</li>
+            <li><strong>Cómo funciona:</strong> Requiere crear un proyecto en Google Cloud / Firebase Console, registrar la web app, e importar el SDK <code>firebase/messaging</code>.</li>
+            <li><strong>Contras en iOS:</strong> Mayor complejidad de integración con el Service Worker en Safari iOS y peso extra de librerías JS comparado con el estándar VAPID nativo.</li>
+          </ul>
+        </div>
+
+        <!-- Provider 4: OneSignal -->
+        <div class="provider-card">
+          <h3 class="provider-name">4. OneSignal</h3>
+          <p class="provider-tagline">Proveedor comercial con panel web visual.</p>
+          <ul class="feature-list">
+            <li><strong>Coste:</strong> Gratuito hasta 10,000 suscriptores (con limitaciones en funciones avanzadas). Planes de pago costosos después.</li>
+            <li><strong>Ventajas:</strong> Panel visual de marketing, segmentación y programación horaria.</li>
+            <li><strong>Contras:</strong> No es 100% abierto; dependes de un proveedor comercial que puede limitar su plan gratuito en cualquier momento.</li>
+          </ul>
+        </div>
+
+        <!-- Tabla Resumen -->
+        <div class="table-container">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Coste</th>
+                <th>Límite Envíos</th>
+                <th>iOS 16.4+</th>
+                <th>Complejidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-highlight">
+                <td><strong>VAPID Nativo (Node.js)</strong></td>
+                <td><span class="badge badge-success">$0 Real</span></td>
+                <td>Ilimitado</td>
+                <td>Nativo</td>
+                <td>Baja (Directo)</td>
+              </tr>
+              <tr>
+                <td><strong>Supabase + Edge Functions</strong></td>
+                <td><span class="badge badge-success">$0 (Tier Free)</span></td>
+                <td>50,000/mes</td>
+                <td>Nativo</td>
+                <td>Media</td>
+              </tr>
+              <tr>
+                <td><strong>Firebase (FCM)</strong></td>
+                <td><span class="badge badge-success">$0 (Spark)</span></td>
+                <td>Ilimitado</td>
+                <td>Compatible</td>
+                <td>Media / Alta</td>
+              </tr>
+              <tr>
+                <td><strong>OneSignal</strong></td>
+                <td><span class="badge badge-warning">Freemium</span></td>
+                <td>Hasta 10k</td>
+                <td>Compatible</td>
+                <td>Baja</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 4: GUÍA SUPABASE -->
+    <main class="tab-content" id="tab-supabase">
+      <section class="card">
+        <h2 class="card-title">Implementación con Supabase a Coste $0</h2>
+        <p class="card-description">
+          Si prefieres que la base de datos y el backend se alojen en Supabase, sigue esta arquitectura lista para usar:
+        </p>
+
+        <div class="step-guide">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <h4>Crear la tabla en Supabase SQL Editor</h4>
+              <p>Guarda las suscripciones de los iPhones y dispositivos:</p>
+              <pre class="code-block"><code>-- Tabla de suscripciones Push
+CREATE TABLE push_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  device_type TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);</code></pre>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <h4>Supabase Edge Function para enviar</h4>
+              <p>Crea una Edge Function en Deno (carpeta <code>supabase/edge-function.ts</code> en este proyecto) usando <code>web-push</code>:</p>
+              <pre class="code-block"><code>// En supabase/functions/send-push/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import webpush from "npm:web-push@3.6.7";
+
+webpush.setVapidDetails(
+  Deno.env.get("VAPID_SUBJECT")!,
+  Deno.env.get("VAPID_PUBLIC_KEY")!,
+  Deno.env.get("VAPID_PRIVATE_KEY")!
+);
+
+serve(async (req) => {
+  const { title, body, subscription } = await req.json();
+  await webpush.sendNotification(subscription, JSON.stringify({ title, body }));
+  return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+});</code></pre>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <h4>Configurar Variables de Entorno en Supabase</h4>
+              <p>En el panel de Supabase > Edge Functions > Secrets, agrega:</p>
+              <ul>
+                <li><code>VAPID_PUBLIC_KEY</code></li>
+                <li><code>VAPID_PRIVATE_KEY</code></li>
+                <li><code>VAPID_SUBJECT</code> (ej: <code>mailto:tu@correo.com</code>)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Send Noti PWA • Compatible con iOS 16.4+, Android & Desktop • Coste $0</p>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

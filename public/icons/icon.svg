@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A84FF" />
+      <stop offset="100%" stop-color="#5E5CE6" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="115" fill="url(#bg)" />
+  
+  <!-- Bell Icon -->
+  <g filter="url(#shadow)" fill="#FFFFFF">
+    <!-- Bell body -->
+    <path d="M256 100 C210 100 174 136 174 182 L174 250 C174 274 156 298 140 310 C132 316 138 328 148 328 L364 328 C374 328 380 316 372 310 C356 298 338 274 338 250 L338 182 C338 136 302 100 256 100 Z" />
+    <!-- Bell top hanger -->
+    <path d="M256 70 C246 70 238 78 238 88 L238 102 C244 100 250 100 256 100 C262 100 268 100 274 102 L274 88 C274 78 266 70 256 70 Z" />
+    <!-- Bell clapper bottom -->
+    <path d="M224 344 C224 362 238 376 256 376 C274 376 288 342 288 344 L224 344 Z" />
+  </g>
+  
+  <!-- Alert notification dot -->
+  <circle cx="350" cy="140" r="32" fill="#FF375F" stroke="#FFFFFF" stroke-width="8" />
+  <!-- Radio waves (signal) -->
+  <path d="M380 90 A 80 80 0 0 1 430 160" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.85" />
+  <path d="M400 60 A 120 120 0 0 1 465 170" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.5" />
+</svg>

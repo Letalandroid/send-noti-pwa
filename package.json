@@ -1,0 +1,28 @@
+{
+  "name": "send-noti-pwa",
+  "version": "1.0.0",
+  "description": "PWA para envío y recepción de Notificaciones Web Push en iOS y Android con coste 0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Letalandroid/send-noti-pwa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Letalandroid/send-noti-pwa/issues"
+  },
+  "homepage": "https://github.com/Letalandroid/send-noti-pwa#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "web-push": "^3.6.7"
+  }
+}
