@@ -89,6 +89,23 @@ self.addEventListener('push', (event) => {
     promises.push(self.navigator.setAppBadge(1).catch(() => {}));
   }
 
+  // Notificar a las ventanas abiertas para actualizar el historial dentro de la PWA
+  promises.push(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'PUSH_RECEIVED',
+          payload: {
+            title: data.title,
+            body: data.body,
+            url: data.url,
+            receivedAt: new Date().toISOString()
+          }
+        });
+      });
+    })
+  );
+
   event.waitUntil(Promise.all(promises));
 });
 

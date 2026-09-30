@@ -24,6 +24,8 @@ const pushForm = document.getElementById('pushForm');
 const sendFeedback = document.getElementById('sendFeedback');
 const subscribersList = document.getElementById('subscribersList');
 const btnRefreshSubs = document.getElementById('btnRefreshSubs');
+const inboxList = document.getElementById('inboxList');
+const btnClearInbox = document.getElementById('btnClearInbox');
 
 // Elementos de depuración
 const debugUserAgent = document.getElementById('debugUserAgent');
@@ -498,6 +500,16 @@ async function initApp() {
   await fetchVapidKey();
   await updateSubscriptionStatus();
   await loadSubscribers();
+  loadNotificationInbox();
+
+  // Escuchar notificaciones entrantes desde el Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'PUSH_RECEIVED') {
+        saveNotificationToInbox(event.data.payload);
+      }
+    });
+  }
 
   // Listeners de botones
   btnSubscribe.addEventListener('click', subscribeUser);
@@ -507,6 +519,48 @@ async function initApp() {
   pushForm.addEventListener('submit', handleSendBroadcast);
   if (btnRefreshSubs) {
     btnRefreshSubs.addEventListener('click', loadSubscribers);
+  }
+  if (btnClearInbox) {
+    btnClearInbox.addEventListener('click', () => {
+      localStorage.removeItem('notification_inbox');
+      loadNotificationInbox();
+    });
+  }
+}
+
+// Gestión de Bandeja de Entrada Local en el iPhone (Historial)
+function loadNotificationInbox() {
+  if (!inboxList) return;
+  try {
+    const items = JSON.parse(localStorage.getItem('notification_inbox') || '[]');
+    if (items.length === 0) {
+      inboxList.innerHTML = '<p class="empty-state">Sin notificaciones previas aún. Pulsa arriba en "Enviarme Notificación Inmediata".</p>';
+      return;
+    }
+
+    inboxList.innerHTML = items.map((item) => `
+      <div class="sub-item" style="border-left: 3px solid var(--accent-blue);">
+        <div class="sub-info">
+          <span class="sub-device">🔔 ${escapeHtml(item.title)}</span>
+          <p style="color: #cbd5e1; font-size: 0.8rem; margin: 3px 0;">${escapeHtml(item.body)}</p>
+          <span class="sub-date">${new Date(item.receivedAt).toLocaleTimeString()} • ${new Date(item.receivedAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Error cargando inbox:', e);
+  }
+}
+
+function saveNotificationToInbox(notification) {
+  try {
+    const items = JSON.parse(localStorage.getItem('notification_inbox') || '[]');
+    items.unshift(notification);
+    if (items.length > 20) items.length = 20;
+    localStorage.setItem('notification_inbox', JSON.stringify(items));
+    loadNotificationInbox();
+  } catch (e) {
+    console.error('Error guardando en inbox:', e);
   }
 }
 

@@ -56,7 +56,7 @@ if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
   }
 }
 
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:contacto@sendnotipwa.local';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:carlossoncra@gmail.com';
 webpush.setVapidDetails(VAPID_SUBJECT, vapidKeys.publicKey, vapidKeys.privateKey);
 
 // 2. Cargar suscripciones guardadas

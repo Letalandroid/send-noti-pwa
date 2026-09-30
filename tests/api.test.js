@@ -88,6 +88,8 @@ describe('2. Gestión de Suscripciones Push', () => {
   });
 
   test('POST /api/subscribe debe ser idempotente al registrar el mismo dispositivo', async () => {
+    const statsBefore = await (await fetch(`${baseUrl}/api/stats`)).json();
+
     // Registrar nuevamente el mismo endpoint
     const res = await fetch(`${baseUrl}/api/subscribe`, {
       method: 'POST',
@@ -101,12 +103,7 @@ describe('2. Gestión de Suscripciones Push', () => {
     assert.strictEqual(res.status, 201);
     const data = await res.json();
     assert.strictEqual(data.success, true);
-
-    // Verificar en stats que no se duplicó
-    const statsRes = await fetch(`${baseUrl}/api/stats`);
-    const stats = await statsRes.json();
-    const matches = stats.subscribers.filter((s) => s.endpointDomain === 'web.push.apple.com');
-    assert.strictEqual(matches.length, 1, 'No debe duplicar suscripciones con el mismo endpoint');
+    assert.strictEqual(data.totalSubscribers, statsBefore.subscribersCount, 'No debe incrementar el conteo total si el endpoint ya existe');
   });
 
   test('POST /api/unsubscribe debe desuscribir un dispositivo registrado', async () => {
