@@ -158,7 +158,47 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
-// Enviar notificación push
+// Función interna para despachar notificaciones a los dispositivos
+async function dispatchPushNotifications(targets, payload) {
+  if (!targets || targets.length === 0) {
+    return { sent: 0, failed: 0 };
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const expiredEndpoints = [];
+
+  const sendPromises = targets.map(async (sub) => {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: sub.keys
+        },
+        payload
+      );
+      sent++;
+    } catch (err) {
+      failed++;
+      console.error(`Error enviando a ${sub.endpoint.slice(0, 35)}...:`, err.statusCode || err.message);
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        expiredEndpoints.push(sub.endpoint);
+      }
+    }
+  });
+
+  await Promise.all(sendPromises);
+
+  if (expiredEndpoints.length > 0) {
+    subscriptions = subscriptions.filter((s) => !expiredEndpoints.includes(s.endpoint));
+    saveSubscriptions();
+    console.log(`[Push] Se eliminaron ${expiredEndpoints.length} suscripciones expiradas`);
+  }
+
+  return { sent, failed, totalActive: subscriptions.length };
+}
+
+// Enviar notificación push inmediata
 app.post('/api/send', async (req, res) => {
   const { title, body, url, targetId } = req.body;
 
@@ -188,45 +228,85 @@ app.post('/api/send', async (req, res) => {
     });
   }
 
-  let sent = 0;
-  let failed = 0;
-  const expiredEndpoints = [];
-
-  const sendPromises = targets.map(async (sub) => {
-    try {
-      await webpush.sendNotification(
-        {
-          endpoint: sub.endpoint,
-          keys: sub.keys
-        },
-        payload
-      );
-      sent++;
-    } catch (err) {
-      failed++;
-      console.error(`Error enviando a ${sub.endpoint.slice(0, 35)}...:`, err.statusCode || err.message);
-      // 410 Gone o 404 Not Found indican que el usuario canceló la suscripción o expiró
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        expiredEndpoints.push(sub.endpoint);
-      }
-    }
-  });
-
-  await Promise.all(sendPromises);
-
-  // Limpiar suscripciones inactivas/expiradas
-  if (expiredEndpoints.length > 0) {
-    subscriptions = subscriptions.filter((s) => !expiredEndpoints.includes(s.endpoint));
-    saveSubscriptions();
-    console.log(`[Push] Se eliminaron ${expiredEndpoints.length} suscripciones expiradas`);
-  }
+  const result = await dispatchPushNotifications(targets, payload);
 
   res.json({
     success: true,
-    message: `Notificación enviada a ${sent} dispositivo(s). Fallidos: ${failed}`,
-    sent,
-    failed,
-    totalActive: subscriptions.length
+    message: `Notificación enviada a ${result.sent} dispositivo(s). Fallidos: ${result.failed}`,
+    sent: result.sent,
+    failed: result.failed,
+    totalActive: result.totalActive
+  });
+});
+
+// Enviar notificación con RETARDO (ideal para probar cuando la app está CERRADA en iPhone)
+app.post('/api/send-delayed', (req, res) => {
+  const { title, body, url, targetId, delaySeconds = 10 } = req.body;
+
+  if (!title || !body) {
+    return res.status(400).json({ error: 'Título y mensaje son obligatorios' });
+  }
+
+  const waitTime = Math.min(Math.max(Number(delaySeconds) || 10, 3), 60);
+
+  const payload = JSON.stringify({
+    title: title.trim(),
+    body: body.trim(),
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    url: url ? url.trim() : '/'
+  });
+
+  let targets = subscriptions;
+  if (targetId) {
+    targets = subscriptions.filter((s) => s.id === targetId);
+  }
+
+  if (targets.length === 0) {
+    return res.status(200).json({
+      success: false,
+      message: 'No hay dispositivos suscritos para programar la notificación'
+    });
+  }
+
+  // Responder inmediatamente al cliente para que pueda cerrar la app o bloquear el teléfono
+  res.json({
+    success: true,
+    message: `Notificación programada. Se enviará en ${waitTime} segundos. ¡Cierra la app o bloquea tu teléfono ahora para comprobarlo!`,
+    delaySeconds: waitTime
+  });
+
+  // Ejecutar el envío en segundo plano tras el retardo
+  setTimeout(async () => {
+    console.log(`[Push Retardado] Disparando notificación tras ${waitTime}s de espera...`);
+    // Recargar o usar targets activos
+    const currentTargets = targetId
+      ? subscriptions.filter((s) => s.id === targetId)
+      : subscriptions;
+
+    await dispatchPushNotifications(currentTargets, payload);
+  }, waitTime * 1000);
+});
+
+// Disparador rápido por GET (útil para pruebas desde terminal o navegador)
+app.get('/api/send-quick', async (req, res) => {
+  const title = req.query.title || 'Notificación Push Rápida';
+  const body = req.query.body || 'Esta notificación llega incluso con la app cerrada';
+  const url = req.query.url || '/';
+
+  const payload = JSON.stringify({
+    title,
+    body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    url
+  });
+
+  const result = await dispatchPushNotifications(subscriptions, payload);
+  res.json({
+    success: true,
+    message: `Enviado a ${result.sent} dispositivos (Fallidos: ${result.failed})`,
+    result
   });
 });
 

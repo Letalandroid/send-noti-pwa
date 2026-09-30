@@ -15,7 +15,10 @@ const subscribersCount = document.getElementById('subscribersCount');
 const activeSubscribersBadge = document.getElementById('activeSubscribersBadge');
 const btnSubscribe = document.getElementById('btnSubscribe');
 const btnSendTestToMe = document.getElementById('btnSendTestToMe');
+const btnSendTestDelayed = document.getElementById('btnSendTestDelayed');
 const btnUnsubscribe = document.getElementById('btnUnsubscribe');
+const countdownBanner = document.getElementById('countdownBanner');
+const countdownText = document.getElementById('countdownText');
 const subscriptionMessage = document.getElementById('subscriptionMessage');
 const pushForm = document.getElementById('pushForm');
 const sendFeedback = document.getElementById('sendFeedback');
@@ -145,12 +148,14 @@ async function updateSubscriptionStatus() {
       subStatus.className = 'badge badge-success';
       btnSubscribe.classList.add('hidden');
       btnSendTestToMe.classList.remove('hidden');
+      btnSendTestDelayed.classList.remove('hidden');
       btnUnsubscribe.classList.remove('hidden');
     } else {
       subStatus.textContent = 'No suscrito';
       subStatus.className = 'badge badge-warning';
       btnSubscribe.classList.remove('hidden');
       btnSendTestToMe.classList.add('hidden');
+      btnSendTestDelayed.classList.add('hidden');
       btnUnsubscribe.classList.add('hidden');
     }
   } catch (err) {
@@ -299,7 +304,55 @@ async function sendTestToMe() {
     showFeedback(subscriptionMessage, `Error de red: ${e.message}`, 'error');
   } finally {
     btnSendTestToMe.disabled = false;
-    btnSendTestToMe.innerHTML = '<span class="btn-icon">⚡</span> Enviarme Notificación de Prueba';
+    btnSendTestToMe.innerHTML = '<span class="btn-icon">⚡</span> Enviarme Notificación Inmediata';
+  }
+}
+
+// 7.1. Enviar notificación con retardo para probar con la app cerrada
+async function sendTestDelayed() {
+  try {
+    btnSendTestDelayed.disabled = true;
+    countdownBanner.classList.remove('hidden');
+
+    const res = await fetch('/api/send-delayed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        delaySeconds: 10,
+        title: '¡App Cerrada! 📲',
+        body: 'Esta notificación llegó mientras tenías la app cerrada o el iPhone bloqueado.',
+        url: '/'
+      })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      showFeedback(subscriptionMessage, `Error: ${data.message}`, 'error');
+      countdownBanner.classList.add('hidden');
+      btnSendTestDelayed.disabled = false;
+      return;
+    }
+
+    let timeLeft = 10;
+    countdownText.textContent = `Tienes ${timeLeft} segundos: Sal a la pantalla de inicio y bloquea tu iPhone ahora...`;
+
+    const timer = setInterval(() => {
+      timeLeft--;
+      if (timeLeft > 0) {
+        countdownText.textContent = `Tienes ${timeLeft} segundos: Sal a la pantalla de inicio y bloquea tu iPhone ahora...`;
+      } else {
+        clearInterval(timer);
+        countdownText.textContent = '¡Notificación enviada! Revisa la pantalla de tu iPhone.';
+        setTimeout(() => {
+          countdownBanner.classList.add('hidden');
+          btnSendTestDelayed.disabled = false;
+        }, 5000);
+      }
+    }, 1000);
+  } catch (e) {
+    showFeedback(subscriptionMessage, `Error al programar: ${e.message}`, 'error');
+    countdownBanner.classList.add('hidden');
+    btnSendTestDelayed.disabled = false;
   }
 }
 
@@ -450,6 +503,7 @@ async function initApp() {
   btnSubscribe.addEventListener('click', subscribeUser);
   btnUnsubscribe.addEventListener('click', unsubscribeUser);
   btnSendTestToMe.addEventListener('click', sendTestToMe);
+  btnSendTestDelayed.addEventListener('click', sendTestDelayed);
   pushForm.addEventListener('submit', handleSendBroadcast);
   if (btnRefreshSubs) {
     btnRefreshSubs.addEventListener('click', loadSubscribers);

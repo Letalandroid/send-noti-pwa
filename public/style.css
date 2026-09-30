@@ -256,6 +256,16 @@ body {
   gap: 12px;
 }
 
+.warning-banner {
+  background: rgba(255, 214, 10, 0.15);
+  border: 1px solid rgba(255, 214, 10, 0.35);
+  color: #fef08a;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
 /* Status Box */
 .status-box {
   background: var(--bg-input);
@@ -360,6 +370,16 @@ body {
 
 .btn-secondary:hover {
   background: var(--bg-card-hover);
+}
+
+.btn-warning-soft {
+  background: rgba(255, 214, 10, 0.15);
+  color: #ffd60a;
+  border: 1px solid rgba(255, 214, 10, 0.4);
+}
+
+.btn-warning-soft:hover {
+  background: rgba(255, 214, 10, 0.25);
 }
 
 .btn-outline {

@@ -49,11 +49,11 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// MANEJO DE EVENTO PUSH (Notificaciones entrantes en iOS / Android / Desktop)
+// MANEJO DE EVENTO PUSH (Segundo plano: App cerrada o en reposo)
 self.addEventListener('push', (event) => {
   let data = {
     title: 'Notificación PWA',
-    body: 'Has recibido un nuevo mensaje',
+    body: 'Has recibido un nuevo mensaje con la app cerrada',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     url: '/'
@@ -80,14 +80,27 @@ self.addEventListener('push', (event) => {
     renotify: true
   };
 
-  event.waitUntil(
+  // Mantener el worker despierto hasta que el sistema operativo registre la notificación y el badge
+  const promises = [
     self.registration.showNotification(data.title, notificationOptions)
-  );
+  ];
+
+  if ('setAppBadge' in self.navigator) {
+    promises.push(self.navigator.setAppBadge(1).catch(() => {}));
+  }
+
+  event.waitUntil(Promise.all(promises));
 });
 
 // MANEJO DEL CLIC EN LA NOTIFICACIÓN
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  // Limpiar el badge numérico del icono de la app
+  if ('clearAppBadge' in self.navigator) {
+    self.navigator.clearAppBadge().catch(() => {});
+  }
+
   const targetUrl = event.notification.data?.url || '/';
 
   event.waitUntil(

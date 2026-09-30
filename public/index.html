@@ -101,14 +101,34 @@
             <span class="btn-icon">🔔</span> Activar Notificaciones Push
           </button>
           <button id="btnSendTestToMe" class="btn btn-secondary btn-block hidden">
-            <span class="btn-icon">⚡</span> Enviarme Notificación de Prueba
+            <span class="btn-icon">⚡</span> Enviarme Notificación Inmediata
+          </button>
+          <button id="btnSendTestDelayed" class="btn btn-warning-soft btn-block hidden">
+            <span class="btn-icon">⏱️</span> Probar con App Cerrada (Enviar en 10s)
           </button>
           <button id="btnUnsubscribe" class="btn btn-outline-danger btn-block hidden">
             <span class="btn-icon">🔕</span> Desactivar Notificaciones
           </button>
         </div>
 
+        <div id="countdownBanner" class="alert-card warning-banner hidden">
+          <span class="alert-icon">⏳</span>
+          <div>
+            <strong>¡Notificación programada!</strong>
+            <p id="countdownText">Tienes 10 segundos: Cierra la app o bloquea tu iPhone ahora para verla llegar.</p>
+          </div>
+        </div>
+
         <div id="subscriptionMessage" class="feedback-msg"></div>
+      </section>
+
+      <!-- How background works card -->
+      <section class="card">
+        <h3 class="card-subtitle">🔒 ¿Cómo funciona con la App Cerrada?</h3>
+        <p class="card-description" style="margin-top: 6px; margin-bottom: 0;">
+          Al estar instalada en el inicio de tu iPhone, las notificaciones viajan por el servicio oficial de Apple (APNs). 
+          <strong>No necesitas tener la app abierta ni en segundo plano</strong>: tu iPhone sonará, vibrará y mostrará el aviso en la pantalla de bloqueo exactamente igual que una app nativa del App Store.
+        </p>
       </section>
 
       <!-- Device Details Card -->

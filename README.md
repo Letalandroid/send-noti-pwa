@@ -15,6 +15,16 @@ Desde **iOS 16.4**, Apple permite Notificaciones Web Push en Safari **únicament
 5. Pulsa el botón **"🔔 Activar Notificaciones Push"** y autoriza los permisos.
 6. ¡Listo! Ya puedes recibir notificaciones incluso con la app cerrada o el iPhone bloqueado.
 
+### 🔒 ¿Cómo funciona la recepción cuando la app está CERRADA?
+- **La PWA no necesita estar abierta ni minimizada:** Cuando la añades a la pantalla de inicio, el Service Worker queda registrado en el subsistema de notificaciones de iOS.
+- **Flujo en segundo plano:**
+  1. Tu backend emite la notificación firmada con VAPID hacia **Apple APNs** (`web.push.apple.com`).
+  2. Apple envía la alerta al chip del iPhone.
+  3. El sistema operativo iOS despierta el Service Worker en segundo plano, hace sonar el tono, vibra, muestra el banner en la pantalla de bloqueo y activa el badge numérico en el icono de la app.
+  4. Al pulsar el aviso, se abre automáticamente la PWA en pantalla completa.
+- **Herramienta de prueba en la app:**
+  - Incluye el botón **"⏱️ Probar con App Cerrada"**: Programa el envío con un retardo de 10 segundos, dándote tiempo para salir a la pantalla de inicio y bloquear tu iPhone para comprobar que llega en reposo absoluto.
+
 ---
 
 ## 💡 Comparativa de Proveedores Push a Coste $0
